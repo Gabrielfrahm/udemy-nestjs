@@ -4,6 +4,6 @@ export interface Player {
   readonly email: string;
   name: string;
   ranking: string;
-  ranking_position: string;
+  ranking_position: number;
   avatar_url: string;
 }
