@@ -9,6 +9,7 @@ import { Player } from './interface/player.interface';
 
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { UpdatePlayerDto } from './dtos/update-player.dto';
 
 @Injectable()
 export class PlayersService {
@@ -25,14 +26,14 @@ export class PlayersService {
     return this.createPlayer(createPlayerDto);
   }
 
-  async update(_id: string, createPlayerDto: CreatePlayerDto): Promise<Player> {
+  async update(_id: string, updatePlayerDto: UpdatePlayerDto): Promise<Player> {
     const playerFind = await this.playerModel.findOne({ _id }).exec();
 
     if (!playerFind) {
       throw new NotFoundException('Player not found');
     }
 
-    return this.updatePlayer(createPlayerDto);
+    return this.updatePlayer(_id, updatePlayerDto);
   }
 
   async getAll(): Promise<Player[]> {
@@ -62,9 +63,12 @@ export class PlayersService {
     return await createPlayer.save();
   }
 
-  private async updatePlayer(playerDto: CreatePlayerDto): Promise<Player> {
+  private async updatePlayer(
+    _id: string,
+    playerDto: UpdatePlayerDto,
+  ): Promise<Player> {
     return await this.playerModel
-      .findOneAndUpdate({ email: playerDto.email }, { $set: playerDto })
+      .findOneAndUpdate({ _id }, { $set: playerDto })
       .exec();
   }
 }
