@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreatePlayerDto } from './dtos/create-player.dto';
 import { Player } from './interface/player.interface';
 
@@ -11,15 +16,20 @@ export class PlayersService {
     @InjectModel('Player') private readonly playerModel: Model<Player>,
   ) {}
 
-  // private readonly logger = new Logger(PlayersService.name);
-
-  async createOrUpdate(createPlayerDto: CreatePlayerDto): Promise<Player> {
+  async create(createPlayerDto: CreatePlayerDto): Promise<Player> {
     const { email } = createPlayerDto;
-
     const playerFind = await this.playerModel.findOne({ email }).exec();
+    if (playerFind) {
+      throw new BadRequestException('Email already existis');
+    }
+    return this.createPlayer(createPlayerDto);
+  }
+
+  async update(_id: string, createPlayerDto: CreatePlayerDto): Promise<Player> {
+    const playerFind = await this.playerModel.findOne({ _id }).exec();
 
     if (!playerFind) {
-      return this.createPlayer(createPlayerDto);
+      throw new NotFoundException('Player not found');
     }
 
     return this.updatePlayer(createPlayerDto);
@@ -29,16 +39,20 @@ export class PlayersService {
     return await this.playerModel.find().exec();
   }
 
-  async getPlayerByEmail(email: string): Promise<Player> {
-    const findPlayer = await this.playerModel.findOne({ email }).exec();
+  async getPlayerById(_id: string): Promise<Player> {
+    const findPlayer = await this.playerModel.findOne({ _id }).exec();
     if (!findPlayer) {
       throw new NotFoundException(`Player not found`);
     }
     return findPlayer;
   }
 
-  async deletePlayerByEmail(email: string): Promise<void> {
-    return await this.playerModel.remove({ email }).exec();
+  async deletePlayerById(_id: string): Promise<any> {
+    const findPlayer = await this.playerModel.findOne({ _id }).exec();
+    if (!findPlayer) {
+      throw new NotFoundException(`Player not found`);
+    }
+    return await this.playerModel.findOneAndDelete({ _id }).exec();
   }
 
   private async createPlayer(
