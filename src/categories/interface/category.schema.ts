@@ -11,7 +11,7 @@ export const CategorySchema = new mongoose.Schema(
         value: { type: Number },
       },
     ],
-    player: [
+    players: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Player',
