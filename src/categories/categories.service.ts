@@ -37,6 +37,22 @@ export class CategoriesService {
     return await this.categoryModel.find().populate('players').exec();
   }
 
+  async getCategoryPlayerById(playerID: any): Promise<Category> {
+    const findPlayer = await this.playerService.getAll();
+
+    const filterPlayer = findPlayer.filter((item) => item.id == playerID);
+
+    if (filterPlayer.length == 0) {
+      throw new NotFoundException(`Player not found`);
+    }
+
+    return await this.categoryModel
+      .findOne()
+      .where('players')
+      .in(playerID)
+      .exec();
+  }
+
   async getCategoryBy(category: string): Promise<Category> {
     const findCategory = await this.categoryModel.findOne({ category }).exec();
 
