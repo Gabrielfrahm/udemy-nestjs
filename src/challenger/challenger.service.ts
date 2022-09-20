@@ -1,11 +1,17 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { NotFoundError } from 'rxjs';
 import { CategoriesService } from 'src/categories/categories.service';
 import { Category } from 'src/categories/interface/category';
 import { Player } from 'src/players/interface/player.interface';
 import { PlayersService } from 'src/players/players.service';
 import { CreateChallengerDto } from './dtos/create-challenger.dto';
+import { UpdateChallengerDto } from './dtos/update-challenger.dto';
 import { StatusChallenger } from './enum/status-challenger.enum';
 import { Challenger } from './interface/challenger.interface';
 
@@ -51,5 +57,49 @@ export class ChallengerService {
 
     challenger.status = StatusChallenger.PENDENTE;
     return await challenger.save();
+  }
+
+  async getAll(): Promise<Challenger[]> {
+    return this.challengerModel
+      .find()
+      .populate('solicitation')
+      .populate('players')
+      .populate('match')
+      .exec();
+  }
+
+  async getPlayerChallengers(_id: any): Promise<Challenger[]> {
+    const findChallengers = await this.getAll();
+
+    if (!findChallengers) {
+      throw new NotFoundException('this player not have challengers');
+    }
+
+    return this.challengerModel
+      .find()
+      .where('players')
+      .in(_id)
+      .populate('solicitation')
+      .populate('players')
+      .populate('match')
+      .exec();
+  }
+
+  async updateChallenger(
+    _id: string,
+    updateChallengerDto: UpdateChallengerDto,
+  ): Promise<void> {
+    const findChallenger = await this.challengerModel.findById(_id).exec();
+    if (!findChallenger) {
+      throw new NotFoundException('Challenger not found');
+    }
+    if (updateChallengerDto.status) {
+      findChallenger.answerTime = new Date();
+    }
+    findChallenger.status = updateChallengerDto.status;
+    findChallenger.challengerTime = updateChallengerDto.challengerTime;
+    await this.challengerModel
+      .findOneAndUpdate({ _id }, { $set: findChallenger })
+      .exec();
   }
 }

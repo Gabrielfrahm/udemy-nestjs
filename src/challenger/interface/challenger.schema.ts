@@ -7,13 +7,14 @@ export const ChallengerSchema = new mongoose.Schema(
     solicitationTime: { type: Date },
     answerTime: { type: Date },
     category: { type: String },
+    solicitation: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
     players: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Player',
       },
     ],
-    Match: {
+    match: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Match',
     },

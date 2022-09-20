@@ -11,7 +11,7 @@ export interface Challenger extends Document {
   players: Player[];
 }
 
-export interface Partida extends Document {
+export interface Match extends Document {
   category: string;
   players: Player[];
   def: Player;
