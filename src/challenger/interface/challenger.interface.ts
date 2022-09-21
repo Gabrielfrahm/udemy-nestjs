@@ -9,6 +9,7 @@ export interface Challenger extends Document {
   solicitation: Player;
   category: string;
   players: Player[];
+  match: Match;
 }
 
 export interface Match extends Document {

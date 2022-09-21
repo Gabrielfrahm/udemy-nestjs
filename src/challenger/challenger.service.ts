@@ -1,25 +1,26 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { NotFoundError } from 'rxjs';
+import { find } from 'rxjs';
 import { CategoriesService } from 'src/categories/categories.service';
-import { Category } from 'src/categories/interface/category';
-import { Player } from 'src/players/interface/player.interface';
 import { PlayersService } from 'src/players/players.service';
 import { CreateChallengerDto } from './dtos/create-challenger.dto';
+import { IncludesChallengerMatchDto } from './dtos/includes-challenger-match.dto';
 import { UpdateChallengerDto } from './dtos/update-challenger.dto';
 import { StatusChallenger } from './enum/status-challenger.enum';
-import { Challenger } from './interface/challenger.interface';
+import { Challenger, Match } from './interface/challenger.interface';
 
 @Injectable()
 export class ChallengerService {
   constructor(
     @InjectModel('Challenger')
     private readonly challengerModel: Model<Challenger>,
+    @InjectModel('Match') private readonly matchModel: Model<Match>,
     private readonly playerService: PlayersService,
     private readonly categoryService: CategoriesService,
   ) {
@@ -98,6 +99,58 @@ export class ChallengerService {
     }
     findChallenger.status = updateChallengerDto.status;
     findChallenger.challengerTime = updateChallengerDto.challengerTime;
+    await this.challengerModel
+      .findOneAndUpdate({ _id }, { $set: findChallenger })
+      .exec();
+  }
+
+  async includesChallengerMatch(
+    _id: string,
+    includesChallengerMatchDto: IncludesChallengerMatchDto,
+  ): Promise<void> {
+    const findChallenger = await this.challengerModel.findById(_id).exec();
+    if (!findChallenger) {
+      throw new NotFoundException('Challenger not found');
+    }
+    const playerFilter = findChallenger.players.filter(
+      (item) => item._id == includesChallengerMatchDto.def,
+    );
+    if (playerFilter.length === 0) {
+      throw new BadRequestException(
+        'The winner player not was includes in this challenger',
+      );
+    }
+
+    const createdMatch = new this.matchModel(includesChallengerMatchDto);
+    createdMatch.category = findChallenger.category;
+
+    createdMatch.players = findChallenger.players;
+
+    const result = await createdMatch.save();
+
+    findChallenger.status = StatusChallenger.REALIZADO;
+
+    findChallenger.match = result;
+
+    try {
+      await this.challengerModel
+        .findOneAndUpdate({ _id }, { $set: findChallenger })
+        .exec();
+    } catch (error) {
+      await this.matchModel.deleteOne({ _id: result._id }).exec();
+      throw new InternalServerErrorException();
+    }
+  }
+
+  async deleteChallenger(_id: string): Promise<void> {
+    const findChallenger = await this.challengerModel.findById(_id).exec();
+
+    if (!findChallenger) {
+      throw new BadRequestException(`challenger not found`);
+    }
+
+    findChallenger.status = StatusChallenger.CANCELADO;
+
     await this.challengerModel
       .findOneAndUpdate({ _id }, { $set: findChallenger })
       .exec();
